@@ -1,34 +1,16 @@
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
+use redis_starter_rust;
+use std::io;
+use tokio::net::TcpListener;
+use tokio::signal;
 
-fn handle_connection(mut stream: TcpStream) {
-    let mut buf = [0; 512];
-    let wbuf = b"+PONG\r\n";
+// TODO: move this
+const DEFAULT_PORT: u16 = 6379;
 
-    loop {
-        match stream.read(&mut buf) {
-            Ok(bytes_read) => {
-                if bytes_read == 0 {
-                    break;
-                }
-                let _ = stream.write_all(wbuf);
-            }
-            Err(_) => {}
-        }
-    }
-}
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    let listener = TcpListener::bind(&format!("127.0.0.1:{}", DEFAULT_PORT)).await?;
 
-fn main() {
-    let listener = TcpListener::bind("127.0.0.1:6379").unwrap();
+    redis_starter_rust::run(listener, signal::ctrl_c()).await;
 
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                let _ = std::thread::spawn(move || handle_connection(stream));
-            }
-            Err(e) => {
-                println!("error: {}", e);
-            }
-        }
-    }
+    Ok(())
 }
