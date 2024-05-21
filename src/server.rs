@@ -11,6 +11,14 @@ pub struct Handler {
     connection: Connection,
 }
 
+pub async fn run(listener: TcpListener) {
+    let mut server = Listener { listener };
+
+    tokio::spawn(async move {
+        let _ = server.run().await;
+    });
+}
+
 impl Listener {
     async fn run(&mut self) -> crate::Result<()> {
         println!("accepting inbound connections");
@@ -22,11 +30,11 @@ impl Listener {
                 connection: Connection::new(socket),
             };
 
-            tokio::spawn(async move {
-                if let Err(err) = handler.run().await {
-                    let _ = anyhow::anyhow!("connection error: {}", err);
-                }
-            });
+            // tokio::spawn(async move {
+            if let Err(err) = handler.run().await {
+                let _ = anyhow::anyhow!("connection error: {}", err);
+            }
+            // });
         }
     }
 
@@ -47,13 +55,10 @@ impl Handler {
             Some(frame) => frame,
             None => return Ok(()),
         };
+        println!("{:?}", frame);
         let cmd = Command::from_frame(frame)?;
+        println!("{:?}", cmd);
         cmd.apply(&mut self.connection).await?;
         Ok(())
     }
-}
-
-pub async fn run(listener: TcpListener) {
-    let mut server = Listener { listener };
-    let _ = server.run().await;
 }

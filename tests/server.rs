@@ -35,6 +35,29 @@ async fn ping_with_string() {
 }
 
 #[tokio::test]
+async fn ping_concurrently() {
+    let addr1 = start_server().await;
+    let addr2 = start_server().await;
+
+    let mut stream1 = TcpStream::connect(addr1).await.unwrap();
+    let mut stream2 = TcpStream::connect(addr2).await.unwrap();
+
+    stream1.write_all(b"*1\r\n$4\r\nPING\r\n").await.unwrap();
+    stream2.write_all(b"*1\r\n$4\r\nPING\r\n").await.unwrap();
+
+    let mut response1 = [0; 7];
+    let mut response2 = [0; 7];
+    stream1.read(&mut response1).await.unwrap();
+    stream2.read(&mut response2).await.unwrap();
+    stream1.write_all(b"*1\r\n$4\r\nPING\r\n").await.unwrap();
+    let mut response3 = [0; 7];
+    stream1.read(&mut response3).await.unwrap();
+    assert_eq!(b"+PONG\r\n", &response1);
+    assert_eq!(b"+PONG\r\n", &response2);
+    assert_eq!(b"+PONG\r\n", &response3);
+}
+
+#[tokio::test]
 async fn echo() {
     let addr = start_server().await;
 
