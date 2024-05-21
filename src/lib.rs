@@ -1,16 +1,19 @@
-pub mod connection;
-pub use connection::Connection;
-
 pub mod cmd;
 pub use cmd::Command;
+
+mod connection;
+pub use connection::Connection;
 
 pub mod frame;
 pub use frame::Frame;
 
-pub mod parse;
-pub use parse::{Parse, ParseError};
+mod parse;
+use parse::{Parse, ParseError};
 
 pub mod server;
+
+mod shutdown;
+use shutdown::Shutdown;
 
 /// Default port that a redis server listens on.
 pub const DEFAULT_PORT: u16 = 6379;
