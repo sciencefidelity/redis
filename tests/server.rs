@@ -1,9 +1,10 @@
 use redis_starter_rust::server;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
 
 use std::net::SocketAddr;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+use tokio::net::TcpStream;
+use tokio::time::{sleep, Duration};
 
 #[tokio::test]
 async fn ping() {
@@ -103,6 +104,33 @@ async fn get_nonexistent_value() {
     let addr = start_server().await;
 
     let mut stream = TcpStream::connect(addr).await.unwrap();
+
+    stream
+        .write_all(b"*2\r\n$3\r\nGET\r\n$3\r\nfoo\r\n")
+        .await
+        .unwrap();
+
+    let mut response = [0; 5];
+    stream.read(&mut response).await.unwrap();
+    assert_eq!(b"$-1\r\n", &response);
+}
+
+#[tokio::test]
+async fn get_expired_key() {
+    let addr = start_server().await;
+
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+
+    stream
+        .write_all(b"*5\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n$2\r\nPX\r\n$3\r\n100\r\n")
+        .await
+        .unwrap();
+
+    let mut response = [0; 5];
+    stream.read(&mut response).await.unwrap();
+    assert_eq!(b"+OK\r\n", &response);
+
+    let _ = sleep(Duration::from_millis(200)).await;
 
     stream
         .write_all(b"*2\r\n$3\r\nGET\r\n$3\r\nfoo\r\n")

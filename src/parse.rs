@@ -55,6 +55,18 @@ impl Parse {
         }
     }
 
+    pub(crate) fn next_int(&mut self) -> Result<u64, ParseError> {
+        match self.next()? {
+            Frame::Bulk(data) => {
+                let s = str::from_utf8(&data).expect("unaple to parse line");
+                s.parse::<u64>()
+                    .ok()
+                    .ok_or_else(|| "protocol error; invalid number".into())
+            }
+            frame => Err(format!("protocol error; expected int frame but got {:?}", frame).into()),
+        }
+    }
+
     pub(crate) fn finish(&mut self) -> Result<(), ParseError> {
         if self.parts.next().is_none() {
             Ok(())
