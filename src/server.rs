@@ -1,4 +1,4 @@
-use crate::{Command, Connection, Shutdown};
+use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
 
 use std::future::Future;
 use tokio::net::{TcpListener, TcpStream};
@@ -6,6 +6,7 @@ use tokio::sync::{broadcast, mpsc};
 
 #[derive(Debug)]
 pub struct Listener {
+    db_holder: DbDropGuard,
     listener: TcpListener,
     notify_shutdown: broadcast::Sender<()>,
     shutdown_complete_tx: mpsc::Sender<()>,
@@ -13,6 +14,7 @@ pub struct Listener {
 
 #[derive(Debug)]
 pub struct Handler {
+    db: Db,
     connection: Connection,
     shutdown: Shutdown,
     _shutdown_complete: mpsc::Sender<()>,
@@ -24,6 +26,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
 
     let mut server = Listener {
         listener,
+        db_holder: DbDropGuard::new(),
         notify_shutdown,
         shutdown_complete_tx,
     };
@@ -59,6 +62,7 @@ impl Listener {
             let socket = self.accept().await?;
 
             let mut handler = Handler {
+                db: self.db_holder.db(),
                 connection: Connection::new(socket),
                 shutdown: Shutdown::new(self.notify_shutdown.subscribe()),
                 _shutdown_complete: self.shutdown_complete_tx.clone(),
@@ -98,7 +102,7 @@ impl Handler {
             };
 
             let cmd = Command::from_frame(frame)?;
-            cmd.apply(&mut self.connection).await?;
+            cmd.apply(&self.db, &mut self.connection).await?;
         }
 
         Ok(())

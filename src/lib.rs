@@ -4,6 +4,9 @@ pub use cmd::Command;
 mod connection;
 pub use connection::Connection;
 
+mod db;
+use db::{Db, DbDropGuard};
+
 pub mod frame;
 pub use frame::Frame;
 
