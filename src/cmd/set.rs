@@ -32,7 +32,7 @@ impl Set {
             Err(err) => return Err(err.into()),
         }
 
-        Ok(Set { key, value, expire })
+        Ok(Self { key, value, expire })
     }
 
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {

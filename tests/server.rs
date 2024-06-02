@@ -1,4 +1,4 @@
-use redis_starter_rust::server;
+use redis::server;
 
 use std::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

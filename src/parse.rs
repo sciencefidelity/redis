@@ -1,7 +1,7 @@
 use crate::Frame;
 
 use bytes::Bytes;
-use std::{fmt, str, vec};
+use std::{fmt, str, string::ToString, vec};
 
 pub struct Parse {
     parts: vec::IntoIter<Frame>,
@@ -14,13 +14,13 @@ pub enum ParseError {
 }
 
 impl Parse {
-    pub(crate) fn new(frame: Frame) -> Result<Parse, ParseError> {
+    pub(crate) fn new(frame: Frame) -> Result<Self, ParseError> {
         let array = match frame {
             Frame::Array(array) => array,
-            frame => return Err(format!("protocol error; expected array, got {:?}", frame).into()),
+            frame => return Err(format!("protocol error; expected array, got {frame:?}").into()),
         };
 
-        Ok(Parse {
+        Ok(Self {
             parts: array.into_iter(),
         })
     }
@@ -33,13 +33,11 @@ impl Parse {
         match self.next()? {
             Frame::Simple(s) => Ok(s),
             Frame::Bulk(data) => str::from_utf8(&data[..])
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .map_err(|_| "protocol error; invalid string".into()),
-            frame => Err(format!(
-                "protocol error; expected simple frame or bulk frame,  got {:?}",
-                frame
-            )
-            .into()),
+            frame => {
+                Err(format!("protocol error; expected simple or bulk frame, got {frame:?}").into())
+            }
         }
     }
 
@@ -47,11 +45,9 @@ impl Parse {
         match self.next()? {
             Frame::Simple(s) => Ok(Bytes::from(s.into_bytes())),
             Frame::Bulk(data) => Ok(data),
-            frame => Err(format!(
-                "protocol error; expected simple frame or bulk frame,  got {:?}",
-                frame
-            )
-            .into()),
+            frame => {
+                Err(format!("protocol error; expected simple or bulk frame, got {frame:?}",).into())
+            }
         }
     }
 
@@ -63,7 +59,7 @@ impl Parse {
                     .ok()
                     .ok_or_else(|| "protocol error; invalid number".into())
             }
-            frame => Err(format!("protocol error; expected int frame but got {:?}", frame).into()),
+            frame => Err(format!("protocol error; expected int frame but got {frame:?}").into()),
         }
     }
 
@@ -77,13 +73,13 @@ impl Parse {
 }
 
 impl From<String> for ParseError {
-    fn from(src: String) -> ParseError {
+    fn from(src: String) -> Self {
         ParseError::Other(src.into())
     }
 }
 
 impl From<&str> for ParseError {
-    fn from(src: &str) -> ParseError {
+    fn from(src: &str) -> Self {
         src.to_string().into()
     }
 }
@@ -91,8 +87,8 @@ impl From<&str> for ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::EndOfStream => "protocol error; unexpected end of stream".fmt(f),
-            ParseError::Other(err) => err.fmt(f),
+            Self::EndOfStream => "protocol error; unexpected end of stream".fmt(f),
+            Self::Other(err) => err.fmt(f),
         }
     }
 }

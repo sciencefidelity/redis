@@ -7,8 +7,8 @@ pub struct Ping {
 }
 
 impl Ping {
-    pub fn new(msg: Option<Bytes>) -> Self {
-        Ping { msg }
+    pub const fn new(msg: Option<Bytes>) -> Self {
+        Self { msg }
     }
 
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Self> {
@@ -20,10 +20,9 @@ impl Ping {
     }
 
     pub(crate) async fn apply(self, dst: &mut Connection) -> crate::Result<()> {
-        let response = match self.msg {
-            None => Frame::Simple("PONG".to_string()),
-            Some(msg) => Frame::Bulk(msg),
-        };
+        let response = self
+            .msg
+            .map_or_else(|| Frame::Simple("PONG".to_string()), |msg| Frame::Bulk(msg));
 
         dst.write_frame(&response).await?;
 

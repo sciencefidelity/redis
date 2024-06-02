@@ -8,7 +8,7 @@ pub struct Echo {
 
 impl Echo {
     pub fn new(msg: Option<Bytes>) -> Self {
-        Echo { msg }
+        Self { msg }
     }
 
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Self> {
@@ -20,10 +20,10 @@ impl Echo {
     }
 
     pub(crate) async fn apply(self, dst: &mut Connection) -> crate::Result<()> {
-        let response = match self.msg {
-            Some(msg) => Frame::Bulk(msg),
-            None => Frame::Error(format!("ERR wrong number of arguments for 'echo' command")),
-        };
+        let response = self.msg.map_or_else(
+            || Frame::Error("ERR wrong number of arguments for 'echo' command".to_string()),
+            |msg| Frame::Bulk(msg),
+        );
 
         dst.write_frame(&response).await?;
 

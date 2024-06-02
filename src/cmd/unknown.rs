@@ -6,8 +6,8 @@ pub struct Unknown {
 }
 
 impl Unknown {
-    pub(crate) fn new(key: impl ToString) -> Unknown {
-        Unknown {
+    pub(crate) fn new(key: &impl ToString) -> Self {
+        Self {
             command_name: key.to_string(),
         }
     }

@@ -76,12 +76,10 @@ impl Listener {
         }
     }
 
-    async fn accept(&mut self) -> crate::Result<TcpStream> {
-        loop {
-            match self.listener.accept().await {
-                Ok((socket, _)) => return Ok(socket),
-                Err(err) => return Err(err.into()),
-            }
+    async fn accept(&self) -> crate::Result<TcpStream> {
+        match self.listener.accept().await {
+            Ok((socket, _)) => return Ok(socket),
+            Err(err) => return Err(err.into()),
         }
     }
 }
@@ -91,14 +89,13 @@ impl Handler {
         while !self.shutdown.is_shutdown() {
             let maybe_frame = tokio::select! {
                 res = self.connection.read_frame() => res?,
-                _ = self.shutdown.recv() => {
+                () = self.shutdown.recv() => {
                     return Ok(());
                 }
             };
 
-            let frame = match maybe_frame {
-                Some(frame) => frame,
-                None => return Ok(()),
+            let Some(frame) = maybe_frame else {
+                return Ok(());
             };
 
             let cmd = Command::from_frame(frame)?;

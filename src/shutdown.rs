@@ -1,20 +1,20 @@
 use tokio::sync::broadcast;
 
 #[derive(Debug)]
-pub(crate) struct Shutdown {
+pub struct Shutdown {
     is_shutdown: bool,
     notify: broadcast::Receiver<()>,
 }
 
 impl Shutdown {
     pub(crate) fn new(notify: broadcast::Receiver<()>) -> Self {
-        Shutdown {
+        Self {
             is_shutdown: false,
             notify,
         }
     }
 
-    pub(crate) fn is_shutdown(&self) -> bool {
+    pub(crate) const fn is_shutdown(&self) -> bool {
         self.is_shutdown
     }
 

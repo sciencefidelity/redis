@@ -1,4 +1,4 @@
-use redis_starter_rust::{server, DEFAULT_PORT};
+use redis::{server, DEFAULT_PORT};
 use std::io;
 use tokio::net::TcpListener;
 use tokio::signal;

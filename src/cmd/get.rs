@@ -6,18 +6,16 @@ pub struct Get {
 }
 
 impl Get {
-    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Get> {
+    pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Self> {
         let key = parse.next_string()?;
 
-        Ok(Get { key })
+        Ok(Self { key })
     }
 
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
-        let response = if let Some(value) = db.get(&self.key) {
-            Frame::Bulk(value)
-        } else {
-            Frame::Null
-        };
+        let response = db
+            .get(&self.key)
+            .map_or_else(|| Frame::Null, |value| Frame::Bulk(value));
 
         dst.write_frame(&response).await?;
 

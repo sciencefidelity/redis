@@ -25,18 +25,18 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn from_frame(frame: Frame) -> crate::Result<Command> {
+    pub fn from_frame(frame: Frame) -> crate::Result<Self> {
         let mut parse = Parse::new(frame)?;
 
         let command_name = parse.next_string()?.to_lowercase();
 
         let command = match &command_name[..] {
-            "echo" => Command::Echo(Echo::parse_frames(&mut parse)?),
-            "get" => Command::Get(Get::parse_frames(&mut parse)?),
-            "ping" => Command::Ping(Ping::parse_frames(&mut parse)?),
-            "set" => Command::Set(Set::parse_frames(&mut parse)?),
+            "echo" => Self::Echo(Echo::parse_frames(&mut parse)?),
+            "get" => Self::Get(Get::parse_frames(&mut parse)?),
+            "ping" => Self::Ping(Ping::parse_frames(&mut parse)?),
+            "set" => Self::Set(Set::parse_frames(&mut parse)?),
             _ => {
-                return Ok(Command::Unknown(Unknown::new(command_name)));
+                return Ok(Self::Unknown(Unknown::new(&command_name)));
             }
         };
 
@@ -46,7 +46,7 @@ impl Command {
     }
 
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
-        use Command::*;
+        use Command::{Echo, Get, Ping, Set, Unknown};
 
         match self {
             Echo(cmd) => cmd.apply(dst).await,

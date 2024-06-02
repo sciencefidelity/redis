@@ -41,25 +41,25 @@ impl Frame {
             b'*' => {
                 let len = get_decimal(src)?;
                 for _ in 0..len {
-                    Frame::check(src)?;
+                    Self::check(src)?;
                 }
                 Ok(())
             }
-            actual => Err(format!("protocol error; invalid frame type byte `{}", actual).into()),
+            actual => Err(format!("protocol error; invalid frame type byte `{actual}").into()),
         }
     }
 
-    pub fn parse(src: &mut Cursor<&[u8]>) -> Result<Frame, Error> {
+    pub fn parse(src: &mut Cursor<&[u8]>) -> Result<Self, Error> {
         match get_u8(src)? {
             b'+' => {
                 let line = get_line(src)?.to_vec();
                 let string = String::from_utf8(line)?;
-                Ok(Frame::Simple(string))
+                Ok(Self::Simple(string))
             }
             b'-' => {
                 let line = get_line(src)?.to_vec();
                 let string = String::from_utf8(line)?;
-                Ok(Frame::Error(string))
+                Ok(Self::Error(string))
             }
             b'$' => {
                 if b'-' == peek_u8(src)? {
@@ -68,7 +68,7 @@ impl Frame {
                         return Err("protocol error; invalid frame format".into());
                     }
 
-                    Ok(Frame::Null)
+                    Ok(Self::Null)
                 } else {
                     let len = get_decimal(src)?.try_into()?;
                     let n = len + 2;
@@ -80,7 +80,7 @@ impl Frame {
                     let data = Bytes::copy_from_slice(&src.chunk()[..len]);
 
                     skip(src, n)?;
-                    Ok(Frame::Bulk(data))
+                    Ok(Self::Bulk(data))
                 }
             }
             b'*' => {
@@ -88,17 +88,17 @@ impl Frame {
                 let mut out = Vec::with_capacity(len);
 
                 for _ in 0..len {
-                    out.push(Frame::parse(src)?);
+                    out.push(Self::parse(src)?);
                 }
 
-                Ok(Frame::Array(out))
+                Ok(Self::Array(out))
             }
             _ => unimplemented!(),
         }
     }
 }
 
-fn peek_u8(src: &mut Cursor<&[u8]>) -> Result<u8, Error> {
+fn peek_u8(src: &Cursor<&[u8]>) -> Result<u8, Error> {
     if !src.has_remaining() {
         return Err(Error::Incomplete);
     }
@@ -133,7 +133,7 @@ fn get_decimal(src: &mut Cursor<&[u8]>) -> Result<u64, Error> {
 }
 
 fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], Error> {
-    let start = src.position() as usize;
+    let start = usize::try_from(src.position())?;
     let end = src.get_ref().len() - 1;
 
     for i in start..end {
@@ -147,25 +147,25 @@ fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], Error> {
 }
 
 impl From<String> for Error {
-    fn from(src: String) -> Error {
-        src.to_string().into()
+    fn from(src: String) -> Self {
+        src.into()
     }
 }
 
 impl From<&str> for Error {
-    fn from(src: &str) -> Error {
+    fn from(src: &str) -> Self {
         src.to_string().into()
     }
 }
 
 impl From<FromUtf8Error> for Error {
-    fn from(_src: FromUtf8Error) -> Error {
+    fn from(_src: FromUtf8Error) -> Self {
         "protocol error; invalid frame format".into()
     }
 }
 
 impl From<TryFromIntError> for Error {
-    fn from(_src: TryFromIntError) -> Error {
+    fn from(_src: TryFromIntError) -> Self {
         "protocol error; invalid frame format".into()
     }
 }
@@ -175,8 +175,8 @@ impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::Incomplete => "stream ended early".fmt(fmt),
-            Error::Other(err) => err.fmt(fmt),
+            Self::Incomplete => "stream ended early".fmt(fmt),
+            Self::Other(err) => err.fmt(fmt),
         }
     }
 }

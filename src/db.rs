@@ -5,12 +5,12 @@ use tokio::sync::Notify;
 use tokio::time::{self, Duration, Instant};
 
 #[derive(Debug)]
-pub(crate) struct DbDropGuard {
+pub struct DbDropGuard {
     db: Db,
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Db {
+pub struct Db {
     shared: Arc<Shared>,
 }
 
@@ -35,7 +35,7 @@ struct Entry {
 
 impl DbDropGuard {
     pub(crate) fn new() -> Self {
-        DbDropGuard { db: Db::new() }
+        Self { db: Db::new() }
     }
 
     pub(crate) fn db(&self) -> Db {
@@ -60,18 +60,18 @@ impl Db {
             background_task: Notify::new(),
         });
 
-        tokio::spawn(purge_expired_tasks(shared.clone()));
+        tokio::spawn(purge_expired_tasks(Arc::clone(&shared)));
 
-        Db { shared }
+        Self { shared }
     }
 
     pub(crate) fn get(&self, key: &str) -> Option<Bytes> {
-        let state = self.shared.state.lock().unwrap();
+        let state = self.shared.state.lock().expect("failed to read db state");
         state.entries.get(key).map(|entry| entry.data.clone())
     }
 
     pub(crate) fn set(&self, key: String, value: Bytes, expire: Option<Duration>) {
-        let mut state = self.shared.state.lock().unwrap();
+        let mut state = self.shared.state.lock().expect("failed to read db state");
 
         let mut notify = false;
 
@@ -80,8 +80,7 @@ impl Db {
 
             notify = state
                 .next_expiration()
-                .map(|expiration| expiration > when)
-                .unwrap_or(true);
+                .map_or(true, |expiration| expiration > when);
 
             when
         });
@@ -112,7 +111,7 @@ impl Db {
     }
 
     fn shutdown_purge_task(&self) {
-        let mut state = self.shared.state.lock().unwrap();
+        let mut state = self.shared.state.lock().expect("failed to read db state");
         state.shutdown = true;
 
         drop(state);
@@ -122,7 +121,7 @@ impl Db {
 
 impl Shared {
     fn purge_expired_keys(&self) -> Option<Instant> {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().expect("failed to read state");
 
         let state = &mut *state;
 
@@ -141,7 +140,7 @@ impl Shared {
     }
 
     fn is_shutdown(&self) -> bool {
-        self.state.lock().unwrap().shutdown
+        self.state.lock().expect("failed to read state").shutdown
     }
 }
 
@@ -158,8 +157,8 @@ async fn purge_expired_tasks(shared: Arc<Shared>) {
     while !shared.is_shutdown() {
         if let Some(when) = shared.purge_expired_keys() {
             tokio::select! {
-                _ = time::sleep_until(when) => {},
-                _ = shared.background_task.notified() => {}
+                () = time::sleep_until(when) => {},
+                () = shared.background_task.notified() => {}
             }
         } else {
             shared.background_task.notified().await;

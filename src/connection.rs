@@ -2,7 +2,7 @@ use crate::frame::{self, Frame};
 use crate::PROTO_MAX_BULK_LEN;
 
 use bytes::{Buf, BytesMut};
-use std::io::{self, Cursor};
+use std::io::Cursor;
 use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
 use tokio::net::TcpStream;
 
@@ -17,7 +17,7 @@ impl Connection {
     /// Create a new `Connection`, backed by `socket`. Read and write buffers
     /// are initialized.
     pub fn new(socket: TcpStream) -> Self {
-        Connection {
+        Self {
             stream: BufWriter::new(socket),
             buffer: BytesMut::with_capacity(PROTO_MAX_BULK_LEN),
         }
@@ -32,11 +32,10 @@ impl Connection {
             }
 
             if 0 == self.stream.read_buf(&mut self.buffer).await? {
-                if self.buffer.is_empty() {
-                    return Ok(None);
-                } else {
+                if !self.buffer.is_empty() {
                     return Err("connection reset by peer".into());
                 }
+                return Ok(None);
             }
         }
     }
@@ -47,8 +46,8 @@ impl Connection {
         let mut buf = Cursor::new(&self.buffer[..]);
 
         match Frame::check(&mut buf) {
-            Ok(_) => {
-                let len = buf.position() as usize;
+            Ok(()) => {
+                let len = usize::try_from(buf.position())?;
                 buf.set_position(0);
 
                 let frame = Frame::parse(&mut buf)?;
@@ -61,7 +60,7 @@ impl Connection {
     }
 
     /// Write a single `Frame` to the underlying stream.
-    pub async fn write_frame(&mut self, frame: &Frame) -> io::Result<()> {
+    pub async fn write_frame(&mut self, frame: &Frame) -> crate::Result<()> {
         match frame {
             Frame::Array(val) => {
                 self.stream.write_u8(b'*').await?;
@@ -74,10 +73,12 @@ impl Connection {
             _ => self.write_value(frame).await?,
         }
 
-        self.stream.flush().await
+        self.stream.flush().await?;
+
+        Ok(())
     }
 
-    async fn write_value(&mut self, frame: &Frame) -> io::Result<()> {
+    async fn write_value(&mut self, frame: &Frame) -> crate::Result<()> {
         match frame {
             Frame::Simple(val) => {
                 self.stream.write_u8(b'+').await?;
@@ -106,14 +107,14 @@ impl Connection {
         Ok(())
     }
 
-    async fn write_decimal(&mut self, val: u64) -> io::Result<()> {
+    async fn write_decimal(&mut self, val: u64) -> crate::Result<()> {
         use std::io::Write;
 
         let mut buf = [0u8; 20];
         let mut buf = Cursor::new(&mut buf[..]);
-        write!(&mut buf, "{}", val)?;
+        write!(&mut buf, "{val}")?;
 
-        let pos = buf.position() as usize;
+        let pos = usize::try_from(buf.position())?;
         self.stream.write_all(&buf.get_ref()[..pos]).await?;
         self.stream.write_all(b"\r\n").await?;
 
