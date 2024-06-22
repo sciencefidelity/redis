@@ -13,9 +13,7 @@ impl Get {
     }
 
     pub(crate) async fn apply(self, db: &Db, dst: &mut Connection) -> crate::Result<()> {
-        let response = db
-            .get(&self.key)
-            .map_or_else(|| Frame::Null, |value| Frame::Bulk(value));
+        let response = db.get(&self.key).map_or_else(|| Frame::Null, Frame::Bulk);
 
         dst.write_frame(&response).await?;
 

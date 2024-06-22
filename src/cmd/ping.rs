@@ -22,7 +22,7 @@ impl Ping {
     pub(crate) async fn apply(self, dst: &mut Connection) -> crate::Result<()> {
         let response = self
             .msg
-            .map_or_else(|| Frame::Simple("PONG".to_string()), |msg| Frame::Bulk(msg));
+            .map_or_else(|| Frame::Simple("PONG".to_string()), Frame::Bulk);
 
         dst.write_frame(&response).await?;
 
