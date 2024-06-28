@@ -153,6 +153,7 @@ fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], Error> {
 }
 
 impl From<String> for Error {
+    // TODO: fix this unconditional recursion
     #[allow(clippy::unconditional_recursion)]
     fn from(src: String) -> Self {
         src.into()

@@ -20,6 +20,7 @@ pub struct Handler {
     _shutdown_complete: mpsc::Sender<()>,
 }
 
+// TODO: implement send for `shutdown`
 #[allow(clippy::future_not_send)]
 pub async fn run(listener: TcpListener, shutdown: impl Future) {
     let (notify_shutdown, _) = broadcast::channel(1);

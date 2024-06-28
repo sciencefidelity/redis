@@ -120,6 +120,7 @@ impl Db {
 }
 
 impl Shared {
+    // TODO: remove drop tightening of `state`
     #[allow(clippy::significant_drop_tightening)]
     fn purge_expired_keys(&self) -> Option<Instant> {
         let mut state = self.state.lock().expect("failed to read state");
