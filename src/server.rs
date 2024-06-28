@@ -1,4 +1,4 @@
-use crate::{Command, Connection, Db, DbDropGuard, Shutdown};
+use crate::{db, Command, Connection, Db, Shutdown};
 
 use std::future::Future;
 use tokio::net::{TcpListener, TcpStream};
@@ -6,7 +6,7 @@ use tokio::sync::{broadcast, mpsc};
 
 #[derive(Debug)]
 pub struct Listener {
-    db_holder: DbDropGuard,
+    db_holder: db::DropGuard,
     listener: TcpListener,
     notify_shutdown: broadcast::Sender<()>,
     shutdown_complete_tx: mpsc::Sender<()>,
@@ -20,13 +20,14 @@ pub struct Handler {
     _shutdown_complete: mpsc::Sender<()>,
 }
 
+#[allow(clippy::future_not_send)]
 pub async fn run(listener: TcpListener, shutdown: impl Future) {
     let (notify_shutdown, _) = broadcast::channel(1);
     let (shutdown_complete_tx, mut shutdown_complete_rx) = mpsc::channel(1);
 
-    let mut server = Listener {
+    let server = Listener {
         listener,
-        db_holder: DbDropGuard::new(),
+        db_holder: db::DropGuard::new(),
         notify_shutdown,
         shutdown_complete_tx,
     };
@@ -55,7 +56,7 @@ pub async fn run(listener: TcpListener, shutdown: impl Future) {
 }
 
 impl Listener {
-    async fn run(&mut self) -> crate::Result<()> {
+    async fn run(&self) -> crate::Result<()> {
         println!("accepting inbound connections");
 
         loop {
@@ -78,8 +79,8 @@ impl Listener {
 
     async fn accept(&self) -> crate::Result<TcpStream> {
         match self.listener.accept().await {
-            Ok((socket, _)) => return Ok(socket),
-            Err(err) => return Err(err.into()),
+            Ok((socket, _)) => Ok(socket),
+            Err(err) => Err(err.into()),
         }
     }
 }

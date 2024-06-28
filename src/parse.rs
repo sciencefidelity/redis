@@ -8,13 +8,13 @@ pub struct Parse {
 }
 
 #[derive(Debug)]
-pub enum ParseError {
+pub enum Error {
     EndOfStream,
     Other(crate::Error),
 }
 
 impl Parse {
-    pub(crate) fn new(frame: Frame) -> Result<Self, ParseError> {
+    pub(crate) fn new(frame: Frame) -> Result<Self, Error> {
         let array = match frame {
             Frame::Array(array) => array,
             frame => return Err(format!("protocol error; expected array, got {frame:?}").into()),
@@ -25,11 +25,11 @@ impl Parse {
         })
     }
 
-    fn next(&mut self) -> Result<Frame, ParseError> {
-        self.parts.next().ok_or(ParseError::EndOfStream)
+    fn next(&mut self) -> Result<Frame, Error> {
+        self.parts.next().ok_or(Error::EndOfStream)
     }
 
-    pub(crate) fn next_string(&mut self) -> Result<String, ParseError> {
+    pub(crate) fn next_string(&mut self) -> Result<String, Error> {
         match self.next()? {
             Frame::Simple(s) => Ok(s),
             Frame::Bulk(data) => str::from_utf8(&data[..])
@@ -41,7 +41,7 @@ impl Parse {
         }
     }
 
-    pub(crate) fn next_bytes(&mut self) -> Result<Bytes, ParseError> {
+    pub(crate) fn next_bytes(&mut self) -> Result<Bytes, Error> {
         match self.next()? {
             Frame::Simple(s) => Ok(Bytes::from(s.into_bytes())),
             Frame::Bulk(data) => Ok(data),
@@ -51,7 +51,7 @@ impl Parse {
         }
     }
 
-    pub(crate) fn next_int(&mut self) -> Result<u64, ParseError> {
+    pub(crate) fn next_int(&mut self) -> Result<u64, Error> {
         match self.next()? {
             Frame::Bulk(data) => {
                 let s = str::from_utf8(&data).expect("unaple to parse line");
@@ -63,7 +63,7 @@ impl Parse {
         }
     }
 
-    pub(crate) fn finish(&mut self) -> Result<(), ParseError> {
+    pub(crate) fn finish(&mut self) -> Result<(), Error> {
         if self.parts.next().is_none() {
             Ok(())
         } else {
@@ -72,19 +72,19 @@ impl Parse {
     }
 }
 
-impl From<String> for ParseError {
+impl From<String> for Error {
     fn from(src: String) -> Self {
-        ParseError::Other(src.into())
+        Self::Other(src.into())
     }
 }
 
-impl From<&str> for ParseError {
+impl From<&str> for Error {
     fn from(src: &str) -> Self {
         src.to_string().into()
     }
 }
 
-impl fmt::Display for ParseError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::EndOfStream => "protocol error; unexpected end of stream".fmt(f),
@@ -93,4 +93,4 @@ impl fmt::Display for ParseError {
     }
 }
 
-impl std::error::Error for ParseError {}
+impl std::error::Error for Error {}

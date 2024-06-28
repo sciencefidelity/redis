@@ -25,6 +25,9 @@ pub enum Command {
 }
 
 impl Command {
+    /// # Errors
+    ///
+    /// Will return `Err` if the frame fails to parse.
     pub fn from_frame(frame: Frame) -> crate::Result<Self> {
         let mut parse = Parse::new(frame)?;
 

@@ -25,6 +25,10 @@ impl Connection {
     /// Read a single `Frame` from the underlying stream.
     ///
     /// Returns `None` if EOF is reached
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if the frame fails to parse.
     pub async fn read_frame(&mut self) -> crate::Result<Option<Frame>> {
         loop {
             if let Some(frame) = self.parse_frame()? {
@@ -60,6 +64,10 @@ impl Connection {
     }
 
     /// Write a single `Frame` to the underlying stream.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if the frame fails to write.
     pub async fn write_frame(&mut self, frame: &Frame) -> crate::Result<()> {
         match frame {
             Frame::Array(val) => {

@@ -5,7 +5,7 @@ use tokio::sync::Notify;
 use tokio::time::{self, Duration, Instant};
 
 #[derive(Debug)]
-pub struct DbDropGuard {
+pub struct DropGuard {
     db: Db,
 }
 
@@ -33,7 +33,7 @@ struct Entry {
     expires_at: Option<Instant>,
 }
 
-impl DbDropGuard {
+impl DropGuard {
     pub(crate) fn new() -> Self {
         Self { db: Db::new() }
     }
@@ -43,7 +43,7 @@ impl DbDropGuard {
     }
 }
 
-impl Drop for DbDropGuard {
+impl Drop for DropGuard {
     fn drop(&mut self) {
         self.db.shutdown_purge_task();
     }
@@ -120,6 +120,7 @@ impl Db {
 }
 
 impl Shared {
+    #[allow(clippy::significant_drop_tightening)]
     fn purge_expired_keys(&self) -> Option<Instant> {
         let mut state = self.state.lock().expect("failed to read state");
 

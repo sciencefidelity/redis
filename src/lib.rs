@@ -5,13 +5,13 @@ mod connection;
 pub use connection::Connection;
 
 mod db;
-use db::{Db, DbDropGuard};
+use db::Db;
 
 pub mod frame;
 pub use frame::Frame;
 
 mod parse;
-use parse::{Parse, ParseError};
+use parse::Parse;
 
 pub mod server;
 

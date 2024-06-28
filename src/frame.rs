@@ -20,6 +20,9 @@ pub enum Error {
 }
 
 impl Frame {
+    /// # Errors
+    ///
+    /// Will return `Err` if fails to get the next byte.
     pub fn check(src: &mut Cursor<&[u8]>) -> Result<(), Error> {
         match get_u8(src)? {
             b'+' => {
@@ -49,6 +52,9 @@ impl Frame {
         }
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if fails to get the next byte.
     pub fn parse(src: &mut Cursor<&[u8]>) -> Result<Self, Error> {
         match get_u8(src)? {
             b'+' => {
@@ -147,6 +153,7 @@ fn get_line<'a>(src: &mut Cursor<&'a [u8]>) -> Result<&'a [u8], Error> {
 }
 
 impl From<String> for Error {
+    #[allow(clippy::unconditional_recursion)]
     fn from(src: String) -> Self {
         src.into()
     }

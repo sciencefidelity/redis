@@ -1,4 +1,4 @@
-use crate::{Connection, Frame, Parse, ParseError};
+use crate::{parse, Connection, Frame, Parse};
 use bytes::Bytes;
 
 #[derive(Debug, Default)]
@@ -14,7 +14,7 @@ impl Ping {
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Self> {
         match parse.next_bytes() {
             Ok(msg) => Ok(Self::new(Some(msg))),
-            Err(ParseError::EndOfStream) => Ok(Self::default()),
+            Err(parse::Error::EndOfStream) => Ok(Self::default()),
             Err(e) => Err(e.into()),
         }
     }

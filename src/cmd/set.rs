@@ -1,4 +1,4 @@
-use crate::{Connection, Db, Frame, Parse, ParseError};
+use crate::{parse, Connection, Db, Frame, Parse};
 
 use bytes::Bytes;
 use tokio::time::Duration;
@@ -12,7 +12,7 @@ pub struct Set {
 
 impl Set {
     pub(crate) fn parse_frames(parse: &mut Parse) -> crate::Result<Self> {
-        use ParseError::EndOfStream;
+        use parse::Error::EndOfStream;
 
         let key = parse.next_string()?;
         let value = parse.next_bytes()?;
