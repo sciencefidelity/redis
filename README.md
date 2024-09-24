@@ -1,3 +1,3 @@
-# Redis Clone
+# Sidreal
 
-A Redis clone written in Rust
+A Redis clone for fun and learning.

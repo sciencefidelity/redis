@@ -18,7 +18,7 @@ pub mod server;
 mod shutdown;
 use shutdown::Shutdown;
 
-/// Default port that a redis server listens on.
+/// Default port that a Redis server listens on.
 pub const DEFAULT_PORT: u16 = 6379;
 
 /// Default buffer size for a connection.

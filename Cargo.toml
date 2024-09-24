@@ -1,11 +1,11 @@
 [package]
-name = "redis"
+name = "sidereal"
 version = "0.1.0"
-authors = ["Matt Cook <hello@mattcook.dev>"] 
+authors = ["Matt Cook <hello@mattcook.dev>"]
 edition = "2021"
-description = "Redis clone in Rust"
+description = "A Redis clone for fun and learning"
 readme = "README.md"
-repository = "https://github.com/sciencefidelity/redis"
+repository = "https://github.com/sciencefidelity/sidereal"
 license = "MIT or Apache-2.0"
 exclude = ["./scripts"]
 

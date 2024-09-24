@@ -1,4 +1,4 @@
-use redis::{server, DEFAULT_PORT};
+use sidereal::{server, DEFAULT_PORT};
 use std::io;
 use tokio::net::TcpListener;
 use tokio::signal;

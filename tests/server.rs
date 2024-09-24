@@ -1,4 +1,4 @@
-use redis::server;
+use sidereal::server;
 
 use std::net::SocketAddr;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
